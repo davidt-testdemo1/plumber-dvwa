@@ -5,7 +5,7 @@ Description: >-
   the ALB DNS name. Add a domain via the Website path for HTTPS + Route53.
 
 # ── Variables your app reads that Tudovu could not supply ──────────────────────
-# RECAPTCHA_PUBLIC_KEY, RECAPTCHA_PRIVATE_KEY
+# DVWA_SECURITY, RECAPTCHA_PUBLIC_KEY, RECAPTCHA_PRIVATE_KEY
 #
 # These are intentionally NOT set on the container. Setting them to an empty string
 # would be worse than leaving them alone: code like os.environ.setdefault(...) or
@@ -30,6 +30,10 @@ Parameters:
   DesiredCount:
     Type: Number
     Default: 2
+  EnvDvwaSecurity:
+    Type: String
+    Default: ""
+    Description: Optional DVWA_SECURITY for the app container. Injected only when non-empty.
   EnvRecaptchaPublicKey:
     Type: String
     Default: ""
@@ -43,6 +47,7 @@ Parameters:
       cleanly; turn it on for anything holding data you cannot lose.
 
 Conditions:
+  HasEnvDvwaSecurity: !Not [!Equals [!Ref EnvDvwaSecurity, ""]]
   HasEnvRecaptchaPublicKey: !Not [!Equals [!Ref EnvRecaptchaPublicKey, ""]]
 
 Resources:
@@ -192,10 +197,13 @@ Resources:
               Value: "appdb"
             - Name: DB_USER
               Value: "appuser"
-            - Name: DB_PORT
-              Value: !GetAtt Database.Endpoint.Port
             - Name: APP_BUCKET
               Value: !Ref AppBucket
+            - !If
+              - HasEnvDvwaSecurity
+              - Name: DVWA_SECURITY
+                Value: !Ref EnvDvwaSecurity
+              - !Ref "AWS::NoValue"
             - !If
               - HasEnvRecaptchaPublicKey
               - Name: RECAPTCHA_PUBLIC_KEY
@@ -265,7 +273,7 @@ Resources:
     DeletionPolicy: Snapshot
     UpdateReplacePolicy: Snapshot
     Properties:
-      Engine: mysql
+      Engine: mariadb
       DBInstanceClass: db.t3.micro
       AllocatedStorage: "20"
       DBName: appdb
