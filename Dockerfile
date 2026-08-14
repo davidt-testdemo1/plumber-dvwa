@@ -22,8 +22,4 @@ COPY --chown=www-data:www-data config/config.inc.php.dist config/config.inc.php
 
 # This is configuring the stuff for the API
 RUN cd /var/www/html/vulnerabilities/api \
- && composer install
-
-# Added for the Plumber fixture: php:8-apache serves on 80, and Plumber's port
-# detection has no signal for a PHP/Apache app without this.
-EXPOSE 80
+ && composer install \
