@@ -74,8 +74,8 @@ Resources:
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
+          FromPort: 80
+          ToPort: 80
           SourceSecurityGroupId: !Ref AlbSecurityGroup
 
   LoadBalancer:
@@ -91,7 +91,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       VpcId: !Ref VpcId
-      Port: 8080
+      Port: 80
       Protocol: HTTP
       TargetType: ip
       HealthCheckPath: /
@@ -185,7 +185,7 @@ Resources:
         - Name: app
           Image: !Ref ImageUri
           PortMappings:
-            - ContainerPort: 8080
+            - ContainerPort: 80
           Essential: true
           Environment:
             - Name: MYSQL_HOST
@@ -198,6 +198,14 @@ Resources:
               Value: "appuser"
             - Name: APP_BUCKET
               Value: !Ref AppBucket
+            - Name: DB_SERVER
+              Value: !GetAtt Database.Endpoint.Address
+            - Name: DB_PORT
+              Value: !GetAtt Database.Endpoint.Port
+            - Name: DB_DATABASE
+              Value: "appdb"
+            - Name: DB_USER
+              Value: "appuser"
             - !If
               - HasEnvDbServer
               - Name: DB_SERVER
@@ -215,6 +223,8 @@ Resources:
               - !Ref "AWS::NoValue"
           Secrets:
             - Name: MYSQL_PASSWORD
+              ValueFrom: !Sub "${DbSecret}:password::"
+            - Name: DB_PASSWORD
               ValueFrom: !Sub "${DbSecret}:password::"
           LogConfiguration:
             LogDriver: awslogs
@@ -240,7 +250,7 @@ Resources:
             - !Ref ServiceSecurityGroup
       LoadBalancers:
         - ContainerName: app
-          ContainerPort: 8080
+          ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
 
   DbSecret:
